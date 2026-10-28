@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+/* Màu chủ đạo của app. Đổi theme: thay "pink" bằng palette khác của Tailwind (sky, blue, violet...). */
+@theme inline {
+  --color-brand-50: var(--color-pink-50);
+  --color-brand-100: var(--color-pink-100);
+  --color-brand-200: var(--color-pink-200);
+  --color-brand-300: var(--color-pink-300);
+  --color-brand-500: var(--color-pink-500);
+  --color-brand-600: var(--color-pink-600);
+  --color-brand-700: var(--color-pink-700);
+}
+
+body {
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Mũi tên của select: thay mũi tên mặc định (dính sát mép phải) bằng chevron có khoảng cách đều.
+   Để ngoài @layer để thắng px-* của Tailwind. */
+select:not([multiple]) {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%2364748b' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.625rem center;
+  background-size: 1.1rem;
+  padding-right: 2.25rem;
+}
