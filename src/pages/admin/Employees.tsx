@@ -3,15 +3,32 @@ import { useTranslation } from "react-i18next";
 import { parseEmployeesCsv, type ImportResult } from "../../lib/csv";
 import { shortDate } from "../../lib/format";
 import { useStore } from "../../lib/store";
-import { Badge, Button, Card, cx, inputBase, inputCls, PageHeader } from "../../components/ui";
+import type { Employee } from "../../lib/types";
+import { Badge, Button, Card, cx, Field, inputBase, inputCls, PageHeader } from "../../components/ui";
+
+const GENDERS: Employee["gender"][] = ["male", "female", "other"];
+
+const blank = (): Employee => ({
+  id: crypto.randomUUID(),
+  code: "",
+  fullName: "",
+  email: "",
+  department: "",
+  position: "",
+  birthDate: "",
+  joinDate: "",
+  gender: "other",
+  status: "active",
+});
 
 export default function Employees() {
   const { t } = useTranslation();
-  const { employees, importEmployees } = useStore();
+  const { employees, importEmployees, addEmployee } = useStore();
   const [query, setQuery] = useState("");
   const [dept, setDept] = useState("");
   const [preview, setPreview] = useState<(ImportResult & { fileName: string }) | null>(null);
   const [message, setMessage] = useState("");
+  const [draft, setDraft] = useState<Employee | null>(null);
 
   const departments = useMemo(() => [...new Set(employees.map((e) => e.department))].sort(), [employees]);
   const rows = employees.filter(
@@ -32,6 +49,26 @@ export default function Employees() {
     setPreview(null);
   };
 
+  // Thêm tay thì không ghi đè như import: trùng mã NV hoặc email là báo lỗi.
+  const code = draft?.code.trim().toLowerCase() ?? "";
+  const email = draft?.email.trim().toLowerCase() ?? "";
+  const duplicate = employees.some((e) => (code && e.code.toLowerCase() === code) || (email && e.email.toLowerCase() === email));
+
+  const saveDraft = () => {
+    if (!draft) return;
+    const e = {
+      ...draft,
+      code: draft.code.trim(),
+      fullName: draft.fullName.trim(),
+      email: draft.email.trim(),
+      department: draft.department.trim() || t("csv.uncategorized"),
+      position: draft.position.trim(),
+    };
+    addEmployee(e);
+    setMessage(t("employees.added", { name: e.fullName }));
+    setDraft(null);
+  };
+
   return (
     <>
       <PageHeader
@@ -39,6 +76,9 @@ export default function Employees() {
         subtitle={t("employees.activeCount", { count: employees.filter((e) => e.status === "active").length })}
         actions={
           <>
+            <Button variant="secondary" onClick={() => setDraft(blank())}>
+              {t("employees.add")}
+            </Button>
             <a href="/sample-employees.csv" download>
               <Button variant="secondary">{t("employees.downloadSample")}</Button>
             </a>
@@ -62,6 +102,61 @@ export default function Employees() {
       />
 
       {message && <div className="mb-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</div>}
+
+      {draft && (
+        <Card className="mb-6 grid gap-3 border-brand-200 sm:grid-cols-3">
+          <Field label={t("employees.form.fullName")}>
+            <input className={inputCls} value={draft.fullName} onChange={(e) => setDraft({ ...draft, fullName: e.target.value })} />
+          </Field>
+          <Field label={t("employees.form.code")}>
+            <input className={inputCls} value={draft.code} onChange={(e) => setDraft({ ...draft, code: e.target.value })} />
+          </Field>
+          <Field label={t("employees.form.email")}>
+            <input className={inputCls} type="email" value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} />
+          </Field>
+          <Field label={t("employees.form.department")}>
+            <input className={inputCls} list="departments" value={draft.department} onChange={(e) => setDraft({ ...draft, department: e.target.value })} />
+            <datalist id="departments">
+              {departments.map((d) => (
+                <option key={d} value={d} />
+              ))}
+            </datalist>
+          </Field>
+          <Field label={t("employees.form.position")}>
+            <input className={inputCls} value={draft.position} onChange={(e) => setDraft({ ...draft, position: e.target.value })} />
+          </Field>
+          <Field label={t("employees.form.gender")}>
+            <select className={inputCls} value={draft.gender} onChange={(e) => setDraft({ ...draft, gender: e.target.value as Employee["gender"] })}>
+              {GENDERS.map((g) => (
+                <option key={g} value={g}>
+                  {t(`employees.gender.${g}`)}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label={t("employees.form.birthDate")}>
+            <input className={inputCls} type="date" value={draft.birthDate} onChange={(e) => setDraft({ ...draft, birthDate: e.target.value })} />
+          </Field>
+          <Field label={t("employees.form.joinDate")}>
+            <input className={inputCls} type="date" value={draft.joinDate} onChange={(e) => setDraft({ ...draft, joinDate: e.target.value })} />
+          </Field>
+          <Field label={t("employees.col.status")}>
+            <select className={inputCls} value={draft.status} onChange={(e) => setDraft({ ...draft, status: e.target.value as Employee["status"] })}>
+              <option value="active">{t("employees.active")}</option>
+              <option value="inactive">{t("employees.inactive")}</option>
+            </select>
+          </Field>
+          {duplicate && <p className="text-sm text-rose-600 sm:col-span-3">{t("employees.duplicate")}</p>}
+          <div className="flex gap-2 sm:col-span-3">
+            <Button disabled={!draft.fullName.trim() || !draft.birthDate || !draft.joinDate || duplicate} onClick={saveDraft}>
+              {t("common.save")}
+            </Button>
+            <Button variant="ghost" onClick={() => setDraft(null)}>
+              {t("common.cancel")}
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {preview && (
         <Card className="mb-6 border-brand-200">

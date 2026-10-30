@@ -39,6 +39,7 @@ interface Actions {
   setCurrentEmployee: (id: string) => void;
   updateSettings: (patch: Partial<Settings>) => void;
   importEmployees: (rows: Omit<Employee, "id">[]) => { added: number; updated: number };
+  addEmployee: (e: Employee) => void;
   upsertRule: (rule: ReminderRule) => void;
   removeRule: (id: string) => void;
   addSpecialDate: (s: SpecialDate) => void;
@@ -97,6 +98,7 @@ export const useStore = create<Data & Actions>()(
         set({ employees });
         return { added, updated };
       },
+      addEmployee: (e) => set((s) => ({ employees: [...s.employees, e] })),
 
       upsertRule: (rule) =>
         set((s) => ({
